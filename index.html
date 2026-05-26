@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>APEX — Daily Calendar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- ============ INSTRUMENT CLUSTER (header) ============ -->
+<header class="cluster">
+  <div class="cluster__brand">
+    <div class="brand__mark">
+      <svg viewBox="0 0 40 40" width="36" height="36" aria-hidden="true">
+        <polygon points="20,3 37,12 37,28 20,37 3,28 3,12" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <polygon points="20,11 29,16 29,24 20,29 11,24 11,16" fill="currentColor" opacity="0.15"/>
+        <text x="20" y="24" text-anchor="middle" font-family="Rajdhani" font-weight="700" font-size="11" fill="currentColor">AX</text>
+      </svg>
+    </div>
+    <div class="brand__text">
+      <div class="brand__name">APEX</div>
+      <div class="brand__tag">DAILY ITINERARY SYSTEM</div>
+    </div>
+  </div>
+
+  <!-- Gauges: live time, date, today's stats -->
+  <div class="cluster__gauges">
+
+    <!-- Tachometer-style "events today" gauge -->
+    <div class="gauge gauge--tach">
+      <svg viewBox="0 0 140 140" class="gauge__svg" aria-hidden="true">
+        <defs>
+          <linearGradient id="tachStroke" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#ff6b1a"/>
+            <stop offset="100%" stop-color="#ff2a2a"/>
+          </linearGradient>
+        </defs>
+        <!-- track -->
+        <circle cx="70" cy="70" r="58" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+        <!-- arc -->
+        <circle id="tach-arc" cx="70" cy="70" r="58" fill="none"
+                stroke="url(#tachStroke)" stroke-width="8" stroke-linecap="round"
+                stroke-dasharray="364" stroke-dashoffset="364"
+                transform="rotate(-90 70 70)"/>
+        <!-- tick marks -->
+        <g stroke="rgba(255,255,255,0.25)" stroke-width="1">
+          <line x1="70" y1="6"  x2="70" y2="14"/>
+          <line x1="134" y1="70" x2="126" y2="70"/>
+          <line x1="70" y1="134" x2="70" y2="126"/>
+          <line x1="6"  y1="70" x2="14" y2="70"/>
+        </g>
+      </svg>
+      <div class="gauge__readout">
+        <div class="gauge__value" id="tach-value">0</div>
+        <div class="gauge__label">EVENTS / TODAY</div>
+      </div>
+    </div>
+
+    <!-- Digital clock + date -->
+    <div class="gauge gauge--clock">
+      <div class="clock__time" id="clock-time">--:--:--</div>
+      <div class="clock__meta">
+        <span id="clock-day">—</span>
+        <span class="dot">●</span>
+        <span id="clock-date">—</span>
+      </div>
+      <div class="clock__bars" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <!-- Trip computer: weekly stats -->
+    <div class="gauge gauge--trip">
+      <div class="trip__row">
+        <span class="trip__label">WEEK LOAD</span>
+        <span class="trip__value" id="trip-week">0</span>
+      </div>
+      <div class="trip__row">
+        <span class="trip__label">NEXT UP</span>
+        <span class="trip__value" id="trip-next">—</span>
+      </div>
+      <div class="trip__row">
+        <span class="trip__label">COMPLETED</span>
+        <span class="trip__value" id="trip-done">0</span>
+      </div>
+    </div>
+
+  </div>
+</header>
+
+<!-- ============ CONTROL STRIP ============ -->
+<nav class="controls">
+  <div class="controls__left">
+    <button class="btn btn--ghost" id="btn-prev" aria-label="Previous month">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <h2 class="controls__title" id="month-label">—</h2>
+    <button class="btn btn--ghost" id="btn-next" aria-label="Next month">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="btn btn--ghost btn--today" id="btn-today">TODAY</button>
+  </div>
+
+  <div class="controls__right">
+    <div class="view-toggle" role="tablist">
+      <button class="view-toggle__btn is-active" data-view="month" role="tab">MONTH</button>
+      <button class="view-toggle__btn" data-view="week" role="tab">WEEK</button>
+      <button class="view-toggle__btn" data-view="day" role="tab">DAY</button>
+    </div>
+    <button class="btn btn--primary" id="btn-add">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      NEW EVENT
+    </button>
+  </div>
+</nav>
+
+<!-- ============ MAIN CALENDAR STAGE ============ -->
+<main class="stage">
+  <section class="calendar" id="calendar-root">
+    <!-- Rendered by calendar.js -->
+  </section>
+
+  <aside class="side-rail">
+    <div class="rail__panel">
+      <h3 class="rail__title">SELECTED DAY</h3>
+      <div class="rail__date" id="rail-date">—</div>
+      <div class="rail__events" id="rail-events">
+        <div class="rail__empty">No events scheduled.</div>
+      </div>
+    </div>
+
+    <div class="rail__panel">
+      <h3 class="rail__title">CATEGORIES</h3>
+      <ul class="legend" id="category-legend">
+        <!-- Populated by theme.js -->
+      </ul>
+    </div>
+  </aside>
+</main>
+
+<!-- ============ EVENT MODAL ============ -->
+<div class="modal" id="event-modal" aria-hidden="true">
+  <div class="modal__backdrop" data-close></div>
+  <div class="modal__panel" role="dialog" aria-labelledby="modal-title">
+    <div class="modal__header">
+      <div class="modal__stripe"></div>
+      <h2 id="modal-title">NEW EVENT</h2>
+      <button class="modal__close" data-close aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <form class="modal__form" id="event-form">
+      <input type="hidden" id="event-id" />
+
+      <label class="field">
+        <span class="field__label">TITLE</span>
+        <input type="text" id="event-title" required placeholder="e.g. Track day at Silverstone" />
+      </label>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="field__label">DATE</span>
+          <input type="date" id="event-date" required />
+        </label>
+        <label class="field">
+          <span class="field__label">START</span>
+          <input type="time" id="event-start" required />
+        </label>
+        <label class="field">
+          <span class="field__label">END</span>
+          <input type="time" id="event-end" required />
+        </label>
+      </div>
+
+      <label class="field">
+        <span class="field__label">CATEGORY</span>
+        <select id="event-category" required>
+          <!-- Populated by theme.js -->
+        </select>
+      </label>
+
+      <label class="field">
+        <span class="field__label">LOCATION</span>
+        <input type="text" id="event-location" placeholder="Optional" />
+      </label>
+
+      <label class="field">
+        <span class="field__label">NOTES</span>
+        <textarea id="event-notes" rows="3" placeholder="Optional"></textarea>
+      </label>
+
+      <div class="modal__actions">
+        <button type="button" class="btn btn--danger" id="btn-delete" hidden>DELETE</button>
+        <div style="flex:1"></div>
+        <button type="button" class="btn btn--ghost" data-close>CANCEL</button>
+        <button type="submit" class="btn btn--primary">SAVE EVENT</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ SCRIPTS ============ -->
+<script src="theme.js"></script>
+<script src="events.js"></script>
+<script src="calendar.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
